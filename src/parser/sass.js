@@ -1,14 +1,16 @@
 import path from 'path';
 import lodash from 'lodash';
 import requirePackageName from 'require-package-name';
+import tildeImporter from 'node-sass-tilde-importer';
 import { tryRequire } from '../utils';
 
 const sass = tryRequire('node-sass');
 
 export default function parseSASS(content, filePath, deps, rootDir) {
   const { stats } = sass.renderSync({
-    data: content,
+    file: filePath,
     includePaths: [path.dirname(filePath)],
+    importer: tildeImporter,
   });
 
   const result = lodash(stats.includedFiles)

@@ -2,6 +2,8 @@
 
 import 'should';
 import yaml from 'js-yaml';
+import * as path from 'path';
+import * as fs from 'fs';
 import eslintSpecialParser from '../../src/special/eslint';
 
 const testCases = [
@@ -22,10 +24,24 @@ const testCases = [
   {
     name: 'detect specific plugins',
     content: {
-      plugins: ['mocha'],
+      plugins: [
+        'mocha',
+        '@foo',
+        '@bar/eslint-plugin',
+        'baz',
+        'eslint-plugin-boo',
+        '@foo/bar',
+        '@baz\\eslint-plugin',
+      ],
     },
     expected: [
       'eslint-plugin-mocha',
+      '@foo/eslint-plugin',
+      '@bar/eslint-plugin',
+      'eslint-plugin-baz',
+      'eslint-plugin-boo',
+      '@foo/eslint-plugin-bar',
+      '@baz/eslint-plugin',
     ],
   },
   {
@@ -114,6 +130,51 @@ const testCases = [
       '@my-org/eslint-config-long-customized',
     ],
   },
+  {
+    name: 'handle config from plugin with short name',
+    content: {
+      extends: 'plugin:node/recommended',
+    },
+    expected: [
+      'eslint-plugin-node',
+    ],
+  },
+  {
+    name: 'handle config from plugin with full name',
+    content: {
+      extends: 'plugin:eslint-plugin-node/recommended',
+    },
+    expected: [
+      'eslint-plugin-node',
+    ],
+  },
+  {
+    name: 'handle config from scoped plugin with short name',
+    content: {
+      extends: 'plugin:@my-org/recommended',
+    },
+    expected: [
+      '@my-org/eslint-plugin',
+    ],
+  },
+  {
+    name: 'handle config from scoped plugin with short name & config',
+    content: {
+      extends: 'plugin:@my-org/short-customized/recommended',
+    },
+    expected: [
+      '@my-org/eslint-plugin-short-customized',
+    ],
+  },
+  {
+    name: 'handle config from scoped plugin with full name',
+    content: {
+      extends: 'plugin:@my-org/eslint-plugin-long-customized/recommended',
+    },
+    expected: [
+      '@my-org/eslint-plugin-long-customized',
+    ],
+  },
 ];
 
 function testEslint(deps, content) {
@@ -125,7 +186,8 @@ function testEslint(deps, content) {
     '/path/to/.eslintrc.yaml',
   ].forEach((pathToEslintrc) => {
     const result = eslintSpecialParser(
-      content, pathToEslintrc, deps, __dirname);
+      content, pathToEslintrc, deps, __dirname,
+    );
 
     result.should.deepEqual(deps);
   });
@@ -133,22 +195,58 @@ function testEslint(deps, content) {
 
 describe('eslint special parser', () => {
   it('should ignore when filename is not `.eslintrc`', () => {
-    const result = eslintSpecialParser('content', '/a/file');
+    const result = eslintSpecialParser('content', '/a/file', [], __dirname);
     result.should.deepEqual([]);
   });
 
   it('should handle parse error', () =>
-    testEslint([], '{ this is an invalid JSON string'));
+    testEslint([], '{ this is an invalid JSON string', [], __dirname));
 
   it('should handle non-standard JSON content', () =>
     testEslint(
       testCases[1].expected,
-      `${JSON.stringify(testCases[1].content)}\n// this is ignored`));
+      `${JSON.stringify(testCases[1].content)}\n// this is ignored`,
+    ));
+
+  describe('with custom config', () => {
+    it('should parse custom configs from scripts', () => {
+      const rootDir = path.resolve(
+        __dirname,
+        '../fake_modules/eslint_config_custom',
+      );
+      const packagePath = path.resolve(rootDir, 'package.json');
+      const packageContent = fs.readFileSync(packagePath, 'utf-8');
+      const dependencies = Object.keys(
+        JSON.parse(packageContent).devDependencies,
+      );
+      const result = eslintSpecialParser(
+        packageContent,
+        packagePath,
+        dependencies,
+        rootDir,
+      );
+      result.should.deepEqual(['eslint-config-foo-bar']);
+    });
+  });
 
   describe('with JSON format', () =>
     testCases.forEach(testCase =>
       it(`should ${testCase.name}`, () =>
         testEslint(testCase.expected, JSON.stringify(testCase.content)))));
+
+  describe('with package.json config', () =>
+    testCases.forEach((testCase) => {
+      it(`should ${testCase.name}`, () => {
+        const packageResult = eslintSpecialParser(
+          JSON.stringify({ eslintConfig: testCase.content }),
+          path.resolve(__dirname, 'package.json'),
+          testCase.expected,
+          __dirname,
+        );
+
+        packageResult.should.deepEqual(testCase.expected);
+      });
+    }));
 
   describe('with YAML format', () =>
     testCases.forEach(testCase =>

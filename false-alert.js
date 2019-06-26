@@ -8,9 +8,10 @@
  */
 import 'node-sass';
 import 'typescript';
+import 'vue-template-compiler';
 
 /**
  * Recongnize the required module by nyc. See depcheck/depcheck#183
  */
-import 'babel-polyfill';
-import 'babel-register';
+import '@babel/polyfill';
+import '@babel/register';

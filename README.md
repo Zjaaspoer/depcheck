@@ -17,7 +17,7 @@ Depcheck is a tool for analyzing the dependencies in a project to see: how each 
 npm install -g depcheck
 ```
 
-*Notice:* depcheck needs node.js >= 4.
+*Notice:* depcheck needs node.js >= 6.
 
 ## Syntax Support
 
@@ -28,6 +28,7 @@ Depcheck not only recognizes the dependencies in JavaScript files, but also supp
 - [CoffeeScript](http://coffeescript.org/)
 - [Typescript](http://www.typescriptlang.org/) (with `typescript` dependency)
 - [SASS and SCSS](http://sass-lang.com/) (with `node-sass` dependency)
+- [Vue.js](https://vuejs.org/) (with `vue-template-compiler` dependency)
 
 To get the syntax support by external dependency, please install the corresponding package explicitly. For example, for Typescript user, install depcheck with `typescript` package:
 
@@ -41,13 +42,16 @@ The *special* component is used to recognize the dependencies that are not gener
 
 - `bin` - Dependencies used in npm commands, Travis scripts or other CI scripts
 - `eslint` - [ESLint](https://www.npmjs.com/package/eslint) configuration presets, parsers and plugins
+- `tslint` - [TSLint](https://www.npmjs.com/package/tslint) configuration presets, parsers and plugins
 - `webpack` - [Webpack](https://www.npmjs.com/package/webpack) loaders
 - `babel` - [Babel](https://www.npmjs.com/package/babel) presets and plugins
 - [Grunt](https://www.npmjs.com/package/grunt) plugins
 - `feross-standard` - [Feross standard](https://www.npmjs.com/package/standard) format parser
 - `mocha` - [Mocha](https://www.npmjs.com/package/mocha) explicit required dependencies
+- `jest` - [Jest](https://www.npmjs.com/package/jest) properties in [Jest Configuration](https://jestjs.io/docs/en/configuration)
 - `commitizen` - [Commitizen](https://www.npmjs.com/package/commitizen) configuration adaptor
 - `gulp-load-plugins` - [Gulp-load-plugins](https://www.npmjs.com/package/gulp-load-plugins) lazy loaded plugins
+- `gatsby` - [Gatsby](https://www.npmjs.com/package/gatsby) configuration parser
 
 The logic of a special is not perfect. There might be [false alerts](#false-alert). If this happens, please open an issue for us.
 
@@ -61,7 +65,7 @@ The `directory` argument is the root directory of your project (where the `packa
 
 All of the arguments are optional:
 
-`--ignore-bin-package=[true|false]`: A flag to indicate if depcheck ignores the packages containing bin entry. The default value is `true`.
+`--ignore-bin-package=[true|false]`: A flag to indicate if depcheck ignores the packages containing bin entry. The default value is `false`.
 
 `--skip-missing=[true|false]`: A flag to indicate if depcheck skips calculation of missing dependencies. The default value is `false`.
 
@@ -188,7 +192,7 @@ $> depcheck /path/to/my/project --json | json
 
 ## False Alert
 
-Depcheck just walks through all files and tries to find the dependencies according to some predefined rules. However, the predefined rules may not enough or even be wrong.
+Depcheck just walks through all files and tries to find the dependencies according to some predefined rules. However, the predefined rules may not be enough or may even be wrong.
 
 There may be some cases in which a dependency is being used but is reported as unused, or a dependency is not used but is reported as missing. These are *false alert* situations.
 
